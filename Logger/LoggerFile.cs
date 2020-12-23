@@ -19,16 +19,16 @@ namespace HS.Log.Logger
         /// 
         /// </summary>
         /// <param name="Directory">로그 작성 디렉터리 (절대경로)</param>
-        /// <param name="Buffer">로그 최대 버퍼</param>
         /// <param name="Split">로그 파일 분할 방법</param>
-        public LoggerFile(string Directory = null, uint Buffer = 30, LogSplit Split = LogSplit.DATE)
+        /// <param name="Buffer">로그 최대 버퍼</param>
+        public LoggerFile(string Directory = null, LogSplit Split = LogSplit.DATE, uint Buffer = 1000)
         {
             this.LogDirectory = string.IsNullOrWhiteSpace(Directory) ? StringUtils.GetExcutePath() + "\\Logs" : Directory;
             this.Buffer = Buffer;
             this.Split = Split;
 
             th_file_start = new ThreadStart(LOOP);
-            th_file = new Thread(th_file_start);
+            th_file = new Thread(th_file_start) { IsBackground = true };
             th_file.Start();
             //try { if (th_file != null) th_file.Abort(); } catch (Exception ex) { Console.WriteLine(new LogData(ex, "LoggerFile::Init_Thread_File() 오류발생!!")); }
             //try { th_file = new Thread(th_file_start); th_file.Start(); } catch (Exception ex) { Console.WriteLine(new LogData(ex, "LoggerFile::Init_Thread_File() 오류발생!!")); }
@@ -36,7 +36,7 @@ namespace HS.Log.Logger
 
         #region Properties
         private bool _Writing = true;
-        private uint _Buffer = 30;
+        private uint _Buffer;
 
         /// <summary>
         /// 로그 출력(작성) 여부
@@ -57,7 +57,11 @@ namespace HS.Log.Logger
         #endregion
 
         #region Implement
-        public override void Write(LogData Data) => Log.Enqueue(Data);
+        public override void Write(LogData Data)
+        {
+            if (Log.Count <= Buffer) Log.Enqueue(Data);
+            else { Log.Dequeue(); Log.Enqueue(Data); }
+        }
         public override Task WriteAsync(LogData Data)
         {
             Write(Data);
@@ -85,29 +89,26 @@ namespace HS.Log.Logger
             {
                 while (true)
                 {
-                    while (Log.Count >= Buffer)
+                    while (Log.Count > 0)
                     {
-                        uint cnt = (uint)Log.Count - Buffer;
-                        while (cnt-- >= 0)
+                        var data = Log.Dequeue();
+                        string path = GetLogPath(data.Tag);
+                        if (path != path_bf)
                         {
-                            var data = Log.Dequeue();
-                            string path = GetLogPath(data.Module);
-                            if (path != path_bf)
+                            try { if (fs != null) fs.Close(); } catch { }
+                            try { if (sw != null) sw.Close(); } catch { }
+                            try
                             {
-                                try { if (fs != null) fs.Close(); } catch { }
-                                try { if (sw != null) sw.Close(); } catch { }
-                                try
-                                {
-                                    fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-                                    sw = new StreamWriter(fs);
-                                    path_bf = path;
-                                }
-                                catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); cnt++; continue; }
+                                fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+                                sw = new StreamWriter(fs);
+                                path_bf = path;
                             }
-
-                            try { sw.WriteLine(data.ToString()); }
-                            catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); cnt++; continue; }
+                            catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
                         }
+
+                        try { sw.WriteLine(data.ToString()); }
+                        catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
+
                         sw.Flush();
                         fs.Flush();
                     }
@@ -115,6 +116,11 @@ namespace HS.Log.Logger
                 }
             }
             catch (Exception ex) { Console.WriteLine(new LogData(ex)); }
+            finally
+            {
+                try { if (fs != null) fs.Close(); } catch { }
+                try { if (sw != null) sw.Close(); } catch { }
+            }
         }
         #endregion
 
@@ -122,14 +128,16 @@ namespace HS.Log.Logger
         /// <summary>
         /// 로그 파일 경로 가져오기
         /// </summary>
-        private string GetLogPath(string AssemblyName = null)
+        private string GetLogPath(string Tag = null)
         {
             if (!Directory.Exists(LogDirectory)) Directory.CreateDirectory(LogDirectory);
 
             if (Split == LogSplit.DATE) return StringUtils.PathMaker(LogDirectory, DateTime.Now.DatetimeToString(false) + ".log");
-            else if (Split == LogSplit.ASSEMBLY) return StringUtils.PathMaker(LogDirectory, AssemblyName + ".log");
+            else if (Split == LogSplit.TAG) return StringUtils.PathMaker(LogDirectory, StringUtils.MakeValidFileName(Tag, false, false) + ".log");
             else return StringUtils.PathMaker(LogDirectory, "Log.log");
         }
+
+
         #endregion
 
         #region Enums
@@ -137,7 +145,7 @@ namespace HS.Log.Logger
         {
             NONE,
             DATE,
-            ASSEMBLY
+            TAG
         }
         #endregion
     }

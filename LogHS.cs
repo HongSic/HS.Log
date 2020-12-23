@@ -9,37 +9,42 @@ namespace HS.Log
     public static class LogHS
     {
         public static List<ILogger> Logger { get; private set; }
-        public static bool Inited => Logger.Count > 0;
-        public static LogLevel Level { get; set; } = LogLevel.ALL;
+        public static bool Inited { get { return Logger != null && Logger.Count > 0; } }
+        public static LogLevel Level { get; set; }
 
         /// <summary>
         /// 로거 초기화
         /// </summary>
         /// <param name="Level">로그 레벨 설정</param>
         /// <param name="Logger"></param>
-        public static void Init(LogLevel Level = LogLevel.ALL, params ILogger[] Logger)
+        public static void Init(
+            LogLevel Level = LogLevel.CRITICAL | LogLevel.DEBUG | LogLevel.ERROR | LogLevel.INFO | LogLevel.WARN, 
+            params ILogger[] Logger)
         {
             LogHS.Level = Level;
-            LogHS.Logger.AddRange(Logger);
+            LogHS.Logger = new List<ILogger>(Logger);
         }
 
-        public static void AddLoger(ILogger Logger) => LogHS.Logger.Add(Logger);
+        public static void AddLoger(ILogger Logger) { if(Logger != null) LogHS.Logger.Add(Logger); }
         public static void RemoveLogger(int Index)
         {
-            var logger = LogHS.Logger[Index];
-            LogHS.Logger.RemoveAt(Index);
-            logger.Dispose();
+            if (Logger != null)
+            {
+                var logger = LogHS.Logger[Index];
+                LogHS.Logger.RemoveAt(Index);
+                logger.Dispose();
+            }
         }
 
         #region Write
         public static void Write(LogData data)
         {
-            for (int i = 0; i < Logger.Count; i++) 
-                if(data.LevelMatch(Level)) Logger[i].Write(data);
+            if (Logger != null)
+            {
+                for (int i = 0; i < Logger.Count; i++)
+                    if (data.LevelMatch(Level)) Logger[i].Write(data);
+            }
         }
-        public static void Write(LogLevel Level, string Message) => Write(new LogData(Level, Message));
-        public static void Write(Exception Exception, LogLevel Level = LogLevel.ERROR) => Write(new LogData(Exception, Level));
-        public static void Write(Exception Exception, string Message, LogLevel Level = LogLevel.ERROR) => Write(new LogData(Exception, Message, Level));
         #endregion
 
         #region Utils
@@ -49,7 +54,7 @@ namespace HS.Log
         /// <param name="Data"></param>
         /// <param name="Level"></param>
         /// <returns></returns>
-        public static bool LevelMatch(this LogData Data, LogLevel Level) { return (Data.Level & Level) == Level; }
+        public static bool LevelMatch(this LogData Data, LogLevel Level) { return (Level & Data.Level) == Data.Level; }
 
         /// <summary>
         /// 
