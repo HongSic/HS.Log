@@ -30,9 +30,21 @@ namespace HS.Log
         {
             if (Logger != null)
             {
-                var logger = LogHS.Logger[Index];
                 LogHS.Logger.RemoveAt(Index);
-                logger.Dispose();
+                Logger[Index].Dispose();
+            }
+        }
+
+        public static void Reset()
+        {
+            Level = 0;
+            if (Logger != null)
+            {
+                for(int i = Logger.Count - 1; i >= 0; i--)
+                {
+                    try { Logger[i].Dispose(); } catch { }
+                    Logger.RemoveAt(i);
+                }
             }
         }
 
