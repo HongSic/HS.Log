@@ -26,7 +26,8 @@ namespace HS.Log
         /// <param name="Level">로그 레벨</param>
         /// <param name="Message">메세지</param>
         public LogData(string Tag, LogLevel Level, string Message) : this()
-        { 
+        {
+            this.Tag = Tag;
             this.Level = Level; 
             this.Message = Message; 
         }
@@ -90,7 +91,7 @@ namespace HS.Log
         /// <summary>
         ///  로그 
         /// </summary>
-        /// <returns>[YYYY-MM-DD hh:mm:ss.aaa] [로그레벨] 어셈블리: 메세지</returns>
+        /// <returns>[YYYY-MM-DD hh:mm:ss.aaa] [로그레벨] [어셈블리]: 메세지</returns>
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
@@ -100,7 +101,7 @@ namespace HS.Log
             else if (Level == LogLevel.WARN || Level == LogLevel.INFO) sb.Append(Level.ToString()).Append(" ] ");//.Append("    ] ");
             else sb.Append(Level.ToString()).Append("] ");
 
-            if (Tag != null) sb.Append(Tag + ": ");
+            if (Tag != null) sb.AppendFormat("[{0}]: ", Tag);
 
             sb.Append(Message);
 
