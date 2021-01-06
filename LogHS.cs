@@ -73,8 +73,9 @@ namespace HS.Log
         /// </summary>
         /// <param name="date"></param>
         /// <param name="IncludeTime">True 면 시간포함 False 면 포함하지 않음</param>
+        /// <param name="MilliSecond">True 면 밀리초포함 False 면 포함하지 않음 (IncludeTime 이 True 여야 함)</param>
         /// <returns>YYYY-MM-DD (hh:mm:ss.aaa)</returns>
-        public static string DatetimeToString(this DateTime date, bool IncludeTime)
+        public static string DatetimeToString(this DateTime date, bool IncludeTime, bool MilliSecond = true)
         {
             StringBuilder sb = new StringBuilder(IncludeTime ? 19 : 10);
             sb.Append(date.Year).Append("-")
@@ -86,8 +87,8 @@ namespace HS.Log
                 sb.Append(" ")
                 .Append(date.Hour.ToString("00")).Append(":")
                 .Append(date.Minute.ToString("00")).Append(":")
-                .Append(date.Second.ToString("00")).Append(".")
-                .Append(date.Millisecond.ToString("000"));
+                .Append(date.Second.ToString("00")).Append(".");
+                if(MilliSecond) sb.Append(date.Millisecond.ToString("000"));
             }
             return sb.ToString();
         }
