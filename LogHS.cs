@@ -57,6 +57,14 @@ namespace HS.Log
                     if (data.LevelMatch(Level)) Logger[i].Write(data);
             }
         }
+        public static async Task WriteAsync(LogData data)
+        {
+            if (Logger != null)
+            {
+                for (int i = 0; i < Logger.Count; i++)
+                    if (data.LevelMatch(Level)) await Logger[i].WriteAsync(data);
+            }
+        }
         #endregion
 
         #region Utils
