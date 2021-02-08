@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace HS.Log
 {
+    public delegate bool LogWritingEventHandler(LogData data);
+    public delegate bool LogWritingMatchEventHandler(LogData data);
+
     public static class LogHS
     {
+        public static event LogWritingEventHandler LogWriting;
+        public static event LogWritingMatchEventHandler LogWritingMatch;
+
         public static List<ILogger> Logger { get; private set; }
         public static bool Inited { get { return Logger != null && Logger.Count > 0; } }
         public static LogLevel Level { get; set; }
@@ -51,18 +57,27 @@ namespace HS.Log
         #region Write
         public static void Write(LogData data)
         {
-            if (Logger != null)
+            bool Continue = true;
+            try { if(LogWriting != null) Continue = LogWriting.Invoke(data); } catch { }
+            if (Continue && Logger != null)
             {
-                for (int i = 0; i < Logger.Count; i++)
-                    if (data.LevelMatch(Level)) Logger[i].Write(data);
+                try { if (LogWritingMatch != null) Continue = LogWritingMatch.Invoke(data); } catch { }
+                if (Continue)
+                    for (int i = 0; i < Logger.Count; i++)
+                        if (data.LevelMatch(Level)) Logger[i].Write(data);
             }
         }
         public static async Task WriteAsync(LogData data)
         {
-            if (Logger != null)
+            bool Continue = true;
+            try { if (LogWriting != null) Continue = LogWriting.Invoke(data); } catch { }
+            if (Continue && data.LevelMatch(Level))
             {
-                for (int i = 0; i < Logger.Count; i++)
-                    if (data.LevelMatch(Level)) await Logger[i].WriteAsync(data);
+                try { if (LogWritingMatch != null) Continue = LogWritingMatch.Invoke(data); } catch { }
+                if (Continue)
+                    if (Logger != null)
+                        for (int i = 0; i < Logger.Count; i++) 
+                            await Logger[i].WriteAsync(data);
             }
         }
         #endregion
