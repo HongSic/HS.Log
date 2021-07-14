@@ -28,7 +28,7 @@ namespace HS.Log.Logger
             this.Split = Split;
 
             th_file_start = new ThreadStart(LOOP);
-            th_file = new Thread(th_file_start) { IsBackground = true };
+            th_file = new Thread(th_file_start) { IsBackground = false };
             th_file.Start();
             //try { if (th_file != null) th_file.Abort(); } catch (Exception ex) { Console.WriteLine(new LogData(ex, "LoggerFile::Init_Thread_File() 오류발생!!")); }
             //try { th_file = new Thread(th_file_start); th_file.Start(); } catch (Exception ex) { Console.WriteLine(new LogData(ex, "LoggerFile::Init_Thread_File() 오류발생!!")); }
@@ -81,6 +81,7 @@ namespace HS.Log.Logger
         #region Loop
         FileStream fs = null;
 
+        bool PeekMode = true;
         private void LOOP()
         {
             string path_bf = null;
@@ -91,26 +92,38 @@ namespace HS.Log.Logger
                 {
                     while (Log.Count > 0)
                     {
-                        var data = Log.Dequeue();
-                        string path = GetLogPath(data.Tag);
-                        if (path != path_bf)
+                        LogData data = null;
+                        /// 중간에 <see cref="PeekMode"/> 값을 바꿀수도 있으므로
+                        bool IsPeek = false;
+                        if (PeekMode)
                         {
-                            try { if (fs != null) fs.Close(); } catch { }
-                            try { if (sw != null) sw.Close(); } catch { }
-                            try
+                            IsPeek = true;
+                            data = Log.Peek();
+                        }
+                        else data = Log.Dequeue();
+
+                        string path = GetLogPath(data.Tag);
+                        try
+                        {
+                            //File.Exist(path)...
+                            if (path != path_bf)
                             {
-                                fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-                                sw = new StreamWriter(fs);
+                                try { sw = CreateFile(path, sw); } catch (Exception ex) { Console.WriteLine(new LogData(ex)); }
                                 path_bf = path;
                             }
+
+                            try { sw.WriteLine(data.ToString()); }
                             catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
+
+                            sw.Flush();
+                            fs.Flush();
                         }
-
-                        try { sw.WriteLine(data.ToString()); }
-                        catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
-
-                        sw.Flush();
-                        fs.Flush();
+                        catch (IOException ex)
+                        {
+                            Console.WriteLine(new LogData(ex));
+                            try { sw = CreateFile(path, sw); } catch (Exception ex1) { Console.WriteLine(new LogData(ex1)); }
+                        }
+                        finally { if (IsPeek) Log.Dequeue(); }
                     }
                     Thread.Sleep(1);
                 }
@@ -121,6 +134,14 @@ namespace HS.Log.Logger
                 try { if (fs != null) fs.Close(); } catch { }
                 try { if (sw != null) sw.Close(); } catch { }
             }
+        }
+        private StreamWriter CreateFile(string path, StreamWriter sw)
+        {
+            try { if (fs != null) fs.Close(); } catch { }
+            try { if (sw != null) sw.Close(); } catch { }
+
+            fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            return new StreamWriter(fs);
         }
         #endregion
 

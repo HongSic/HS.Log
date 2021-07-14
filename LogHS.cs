@@ -24,7 +24,7 @@ namespace HS.Log
         /// <param name="Level">로그 레벨 설정</param>
         /// <param name="Logger"></param>
         public static void Init(
-            LogLevel Level = LogLevel.CRITICAL | LogLevel.DEBUG | LogLevel.ERROR | LogLevel.INFO | LogLevel.WARN, 
+            LogLevel Level = LogLevel.ALL,
             params ILogger[] Logger)
         {
             LogHS.Level = Level;
