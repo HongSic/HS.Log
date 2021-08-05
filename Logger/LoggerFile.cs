@@ -102,28 +102,31 @@ namespace HS.Log.Logger
                         }
                         else data = Log.Dequeue();
 
-                        string path = GetLogPath(data.Tag);
-                        try
+                        if(data != null)
                         {
-                            //File.Exist(path)...
-                            if (path != path_bf)
+                            string path = GetLogPath(data.Tag);
+                            try
                             {
-                                try { sw = CreateFile(path, sw); } catch (Exception ex) { Console.WriteLine(new LogData(ex)); }
-                                path_bf = path;
+                                //File.Exist(path)...
+                                if (path != path_bf)
+                                {
+                                    try { sw = CreateFile(path, sw); } catch (Exception ex) { Console.WriteLine(new LogData(ex)); }
+                                    path_bf = path;
+                                }
+
+                                try { sw.WriteLine(data.ToString()); }
+                                catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
+
+                                sw.Flush();
+                                fs.Flush();
                             }
-
-                            try { sw.WriteLine(data.ToString()); }
-                            catch (Exception ex) { Console.WriteLine(new LogData(ex)); Thread.Sleep(1000); continue; }
-
-                            sw.Flush();
-                            fs.Flush();
+                            catch (IOException ex)
+                            {
+                                Console.WriteLine(new LogData(ex));
+                                try { sw = CreateFile(path, sw); } catch (Exception ex1) { Console.WriteLine(new LogData(ex1)); }
+                            }
+                            finally { if (IsPeek) Log.Dequeue(); }
                         }
-                        catch (IOException ex)
-                        {
-                            Console.WriteLine(new LogData(ex));
-                            try { sw = CreateFile(path, sw); } catch (Exception ex1) { Console.WriteLine(new LogData(ex1)); }
-                        }
-                        finally { if (IsPeek) Log.Dequeue(); }
                     }
                     Thread.Sleep(1);
                 }

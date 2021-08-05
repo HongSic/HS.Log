@@ -38,7 +38,8 @@ namespace HS.Log
         /// <param name="Level">로그 레벨</param>
         public LogData(Exception Exception, LogLevel Level = LogLevel.ERROR) : this()
         { 
-            this.Exception = Exception; 
+            this.Exception = Exception;
+            this.Message = Exception?.Message;
             this.Level = Level; 
             this.Tag = Assembly.GetCallingAssembly().GetName().Name;
         }
@@ -50,7 +51,8 @@ namespace HS.Log
         /// <param name="Level">로그 레벨</param>
         public LogData(string Tag, Exception Exception, LogLevel Level = LogLevel.ERROR) : this()
         {
-            this.Exception = Exception; 
+            this.Exception = Exception;
+            this.Message = Exception?.Message;
             this.Level = Level; 
             this.Tag = Tag;
         }
