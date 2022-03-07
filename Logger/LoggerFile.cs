@@ -23,7 +23,7 @@ namespace HS.Log.Logger
         /// <param name="Buffer">로그 최대 버퍼</param>
         public LoggerFile(string Directory = null, LogSplit Split = LogSplit.DATE, uint Buffer = 1000)
         {
-            this.LogDirectory = string.IsNullOrWhiteSpace(Directory) ? StringUtils.GetExcutePath() + "\\Logs" : Directory;
+            this.LogDirectory = string.IsNullOrWhiteSpace(Directory) ? StringUtils.GetExcuteDirectory() + "\\Logs" : Directory;
             this.Buffer = Buffer;
             this.Split = Split;
 
