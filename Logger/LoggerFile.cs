@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HS.Utils.Text;
 
 namespace HS.Log.Logger
 {
