@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HS.Log
@@ -18,17 +19,41 @@ namespace HS.Log
         public static bool Inited { get { return Logger != null && Logger.Count > 0; } }
         public static LogLevel Level { get; set; }
 
+        public static bool UseQueue { get; private set; }
+        public static int MaxQueue { get; set; } = 1000;
+        public static int QueueCount { get { return LogQueue.Count; } }
+
+        private static Queue<LogData> LogQueue;
+        private static Thread QueueThread;
+
         /// <summary>
         /// 로거 초기화
         /// </summary>
         /// <param name="Level">로그 레벨 설정</param>
         /// <param name="Logger"></param>
-        public static void Init(
-            LogLevel Level = LogLevel.ALL,
-            params ILogger[] Logger)
+        public static void Init(bool UseQueue = false, LogLevel Level = LogLevel.ALL, params ILogger[] Logger)
         {
             LogHS.Level = Level;
             LogHS.Logger = new List<ILogger>(Logger);
+
+            if(UseQueue)
+            {
+                LogQueue = new Queue<LogData>(MaxQueue);
+                QueueThread = new Thread(new ThreadStart(() =>
+                {
+                    while (true)
+                    {
+                        if (LogQueue.Count > 0) _Write(LogQueue.Dequeue());
+                        Thread.Sleep(5);
+                    }
+                }));
+                QueueThread.Start();
+            }
+        }
+
+        public static void Dispose()
+        {
+            QueueThread?.Interrupt();
         }
 
         public static void AddLoger(ILogger Logger) { if(Logger != null) LogHS.Logger.Add(Logger); }
@@ -55,19 +80,24 @@ namespace HS.Log
         }
 
         #region Write
-        public static void Write(LogData data)
+        private static void _Write(LogData data)
         {
             bool Continue = true;
-            try { if(LogWriting != null) Continue = LogWriting.Invoke(data); } catch { }
+            try { if (LogWriting != null) Continue = LogWriting.Invoke(data); } catch { }
             if (Continue && Logger != null)
             {
                 try { if (LogWritingMatch != null) Continue = LogWritingMatch.Invoke(data); } catch { }
                 if (Continue)
-                    for (int i = 0; i < Logger.Count; i++)
+                    for (int i = 0; i < LogHS.Logger.Count; i++)
                         if (data.LevelMatch(Level)) Logger[i].Write(data);
             }
         }
-        public static async Task WriteAsync(LogData data)
+        public static void Write(LogData data) 
+        {
+            if (UseQueue) { if (QueueCount < MaxQueue) LogQueue.Enqueue(data); }
+            else _Write(data);
+        }
+        private static async Task _WriteAsync(LogData data)
         {
             bool Continue = true;
             try { if (LogWriting != null) Continue = LogWriting.Invoke(data); } catch { }
@@ -76,9 +106,14 @@ namespace HS.Log
                 try { if (LogWritingMatch != null) Continue = LogWritingMatch.Invoke(data); } catch { }
                 if (Continue)
                     if (Logger != null)
-                        for (int i = 0; i < Logger.Count; i++) 
+                        for (int i = 0; i < Logger.Count; i++)
                             await Logger[i].WriteAsync(data);
             }
+        }
+        public static async Task WriteAsync(LogData data)
+        {
+            if (UseQueue) { if (QueueCount < MaxQueue) LogQueue.Enqueue(data); }
+            else await _WriteAsync(data);
         }
         #endregion
 

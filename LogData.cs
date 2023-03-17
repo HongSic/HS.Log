@@ -91,6 +91,11 @@ namespace HS.Log
         public DateTime Timestamp { get; private set; }
 
         /// <summary>
+        /// 하위 예외까지 모두 출력
+        /// </summary>
+        public bool ShowInnerException { get; set; } = false; //true
+
+        /// <summary>
         ///  로그 
         /// </summary>
         /// <returns>[YYYY-MM-DD hh:mm:ss.aaa] [로그레벨] [어셈블리]: 메세지</returns>
@@ -109,20 +114,41 @@ namespace HS.Log
 
             if (Exception != null)
             {
-                //if (Message == null)
-                //{
-                //    sb.Append(Exception.Message).AppendLine();
-                //    sb.AppendFormat("  {0}:", Exception.GetType().FullName).AppendLine();
-                //}
-                //else
+                if(ShowInnerException)
+                {
+                    /*
+                    StringBuilder error_type = new StringBuilder();
+                    bool error_first = true;
+                    Exception exi = ex?.InnerException;
+                    if (exi != null)
+                    {
+                        error_type.Append("(내부: ");
+                        do
+                        {
+                            if (!error_first) error_type.Append(" -> ");
+                            error_type.Append(exi.GetType());
+                            error_first = false;
+                        }
+                        while ((exi = exi.InnerException) != null);
+                        error_type.Append(")");
+                    }
+
+                    if (ex != null)
+                    {
+                        if (Short) msg += $" ({ex.Message})";
+                        else msg += $"{Environment.NewLine}└ 메세지: {ex.Message}{Environment.NewLine}└ 코드: 0x{ex.HResult:X4} ({ex.HResult}) \r\n└ 종류: {ex.GetType()} {error_type}";
+                    }
+                    */
+                }
+                else
                 {
                     sb.AppendLine();
                     sb.AppendFormat("  {0}: {1}", Exception.GetType().FullName, Exception.Message).AppendLine();
-                }
 
-                string[] str = Exception.StackTrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                sb.Append("  ").Append(str[0]);
-                for (int i = 1; i < str.Length; i++) sb.AppendLine().AppendFormat("  {0}", str[i]);
+                    string[] str = Exception.StackTrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    sb.Append("  ").Append(str[0]);
+                    for (int i = 1; i < str.Length; i++) sb.AppendLine().AppendFormat("  {0}", str[i]);
+                }
             }
 
             return sb.ToString();
