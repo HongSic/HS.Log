@@ -145,9 +145,12 @@ namespace HS.Log
                     sb.AppendLine();
                     sb.AppendFormat("  {0}: {1}", Exception.GetType().FullName, Exception.Message).AppendLine();
 
-                    string[] str = Exception.StackTrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    sb.Append("  ").Append(str[0]);
-                    for (int i = 1; i < str.Length; i++) sb.AppendLine().AppendFormat("  {0}", str[i]);
+                    if(Exception.StackTrace != null)
+                    {
+                        string[] str = Exception.StackTrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        sb.Append("  ").Append(str[0]);
+                        for (int i = 1; i < str.Length; i++) sb.AppendLine().AppendFormat("  {0}", str[i]);
+                    }
                 }
             }
 
