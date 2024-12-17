@@ -60,7 +60,7 @@ namespace HS.Log.Logger
         #region Implement
         public override void Write(LogData Data)
         {
-            if (Log.Count <= Buffer) Log.Enqueue(Data);
+            if (Log.Count <= Buffer) try { Log.Enqueue(Data); } catch (Exception ex) {  }
             else { Log.Dequeue(); Log.Enqueue(Data); }
         }
         public override Task WriteAsync(LogData Data)
