@@ -99,13 +99,13 @@ namespace HS.Log
         ///  로그 
         /// </summary>
         /// <returns>[YYYY-MM-DD hh:mm:ss.aaa] [로그레벨] [어셈블리]: 메세지</returns>
-        public override string ToString() => ToString(false);
+        public override string ToString() => ToString(false, true);
         /// <summary>
         /// 
         /// </summary>
         /// <param name="ShowStacktrace"></param>
         /// <returns></returns>
-        public string ToString(bool ShowStacktrace)
+        public string ToString(bool ShowStacktrace, bool ShowType)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("[{0}] [", Timestamp.DatetimeToString(true));
@@ -149,10 +149,12 @@ namespace HS.Log
                 else
                 {
                     sb.AppendLine();
-                    sb.AppendFormat("  {0}: {1}", Exception.GetType().FullName, Exception.Message).AppendLine();
+                    if (ShowType) sb.AppendFormat("  {0}: {1}", Exception.GetType().FullName, Exception.Message);
+                    else sb.AppendFormat("  {0}", Exception.Message);
 
                     if (ShowStacktrace && Exception.StackTrace != null)
                     {
+                        sb.AppendLine();
                         string[] str = Exception.StackTrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                         sb.Append("  ").Append(str[0]);
                         for (int i = 1; i < str.Length; i++) sb.AppendLine().AppendFormat("  {0}", str[i]);
