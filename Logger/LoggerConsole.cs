@@ -5,13 +5,19 @@ namespace HS.Log.Logger
 {
     public class LoggerConsole : ILogger
     {
-        public bool EnableColor { get; set; } = false;
+        public LoggerConsole(bool EnableForeColor = true, bool EnableBackColor = false)
+        {
+            this.EnableForeColor = EnableForeColor;
+            this.EnableBackColor = EnableBackColor;
+        }
+
+        public bool EnableForeColor { get; set; } = true;
         public bool EnableBackColor { get; set; } = false;
 
         public override void Write(LogData Data)
         {
             string message = Data.ToString();
-            if(EnableColor)
+            if(EnableForeColor)
             {
                 if(Data.Level == LogLevel.CRITICAL)
                 {

@@ -1,15 +1,13 @@
-﻿using HS.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HS.Utils.Text;
 
 namespace HS.Log.Logger
 {
-    public class LoggerFile : ILogger
+    public class LoggerStorage : ILogger
     {
         internal static Queue<LogData> Log = new Queue<LogData>();
 
@@ -19,12 +17,12 @@ namespace HS.Log.Logger
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Directory">로그 작성 디렉터리 (절대경로)</param>
+        /// <param name="Path">로그 작성 디렉터리/파일 (절대경로) [Split 에 따라 달라짐]</param>
         /// <param name="Split">로그 파일 분할 방법</param>
         /// <param name="Buffer">로그 최대 버퍼</param>
-        public LoggerFile(string Directory = null, LogSplit Split = LogSplit.DATE, uint Buffer = 1000)
+        public LoggerStorage(string Path, LogSplit Split = LogSplit.DATE, uint Buffer = 1000)
         {
-            this.LogDirectory = string.IsNullOrWhiteSpace(Directory) ? StringUtils.GetExcuteDirectory() + "\\Logs" : Directory;
+            this.LogDirectory = Split == LogSplit.NONE ? System.IO.Path.GetDirectoryName(Path) : Path;
             this.Buffer = Buffer;
             this.Split = Split;
 
@@ -76,7 +74,7 @@ namespace HS.Log.Logger
             try { if (th_file != null) th_file.Abort(); } catch (Exception ex) { Console.WriteLine(new LogData(ex, "LoggerFile::Dispose() 오류발생!!")); }
             try { if (fs != null) fs.Close(); } catch { }
         }
-        ~LoggerFile() { Dispose(); }
+        ~LoggerStorage() { Dispose(); }
         #endregion
 
         #region Loop
